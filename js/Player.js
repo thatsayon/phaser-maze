@@ -18,37 +18,37 @@ export default class Player extends Phaser.Physics.Matter.Sprite {
         // this.setFixedRotation();
         // this.setScale(0.5); // Scale down the sprite to make it smaller
         // this.setOrigin(0.4, 0.7); // Set the anchor to the center
-        
-    const { Body, Bodies } = Phaser.Physics.Matter.Matter;
 
-// Create a square collider for the body
-    const playerCollider = Bodies.rectangle(this.x, this.y, 28, 42, { 
-        isSensor: false, 
-        label: 'playerCollider' 
-    }); // Width and height set to 32x32
+        const { Body, Bodies } = Phaser.Physics.Matter.Matter;
 
-    // Create a slightly larger square sensor for interactions
-    const playerSensor = Bodies.rectangle(this.x, this.y, 32, 46, { 
-        isSensor: true, 
-        label: 'playerSensor' 
-    }); // Slightly larger to allow interaction detection
+        // Create a square collider for the body
+        const playerCollider = Bodies.rectangle(this.x, this.y, 28, 42, {
+            isSensor: false,
+            label: 'playerCollider'
+        }); // Width and height set to 32x32
 
-    // Combine the parts into a compound body
-    const compoundBody = Body.create({
-        parts: [playerCollider, playerSensor],
-        frictionAir: 0.35, // Smooth movement
-    });
+        // Create a slightly larger square sensor for interactions
+        const playerSensor = Bodies.rectangle(this.x, this.y, 32, 46, {
+            isSensor: true,
+            label: 'playerSensor'
+        }); // Slightly larger to allow interaction detection
 
-    // Attach the compound body to the player sprite
-    this.setExistingBody(compoundBody);
-    this.setFixedRotation(); // Prevent rotation on collision
-    this.setScale(0.5); // Keep scale normal
-    this.setOrigin(0.5, 0.54); // Adjust sprite origin to match the square collider
+        // Combine the parts into a compound body
+        const compoundBody = Body.create({
+            parts: [playerCollider, playerSensor],
+            frictionAir: 0.35, // Smooth movement
+        });
+
+        // Attach the compound body to the player sprite
+        this.setExistingBody(compoundBody);
+        this.setFixedRotation(); // Prevent rotation on collision
+        this.setScale(0.5); // Keep scale normal
+        this.setOrigin(0.5, 0.54); // Adjust sprite origin to match the square collider
 
 
         // Initialize animations
-    this.isMoving = false; // To track movement state
-    this.lastDirection = 'turn'; // To track the last played animation
+        this.isMoving = false; // To track movement state
+        this.lastDirection = 'turn'; // To track the last played animation
     }
 
     static preload(scene) {
@@ -75,15 +75,27 @@ export default class Player extends Phaser.Physics.Matter.Sprite {
             playerVelocity.y = 1;
         }
 
-        // Handle animations
-        if (newDirection) {
-            if (this.lastDirection !== newDirection) {
+        // Handle animations and step sound
+        if (newDirection || playerVelocity.length() > 0) {
+            if (!this.isMoving) {
+                // Start step sound if not already playing
+                if (!this.stepSound || !this.stepSound.isPlaying) {
+                    this.stepSound = this.scene.sound.add('step', { loop: true, volume: 0.5 });
+                    this.stepSound.play();
+                }
+            }
+            this.isMoving = true;
+
+            if (newDirection && this.lastDirection !== newDirection) {
                 this.anims.play(newDirection, true);
                 this.lastDirection = newDirection;
             }
-            this.isMoving = true;
         } else {
             if (this.isMoving) {
+                // Stop step sound when player stops
+                if (this.stepSound && this.stepSound.isPlaying) {
+                    this.stepSound.stop();
+                }
                 this.anims.play('turn');
                 this.isMoving = false;
                 this.lastDirection = 'turn';
@@ -94,5 +106,6 @@ export default class Player extends Phaser.Physics.Matter.Sprite {
         playerVelocity.scale(speed);
         this.setVelocity(playerVelocity.x, playerVelocity.y);
     }
+
 }
 
